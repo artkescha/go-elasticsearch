@@ -1,6 +1,6 @@
 module github.com/elastic/go-elasticsearch/v8/_examples/xkcdsearch
 
-go 1.17
+go 1.20
 
 replace github.com/elastic/go-elasticsearch/v8 => ../..
 
@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	github.com/elastic/elastic-transport-go/v8 v8.0.0-20230201152525-7be14259265a // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.0.0-20230329154755-1a3c63de0db6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.3 // indirect
 	golang.org/x/sys v0.1.0 // indirect
