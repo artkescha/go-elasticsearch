@@ -1,0 +1,93 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package commands
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"regexp"
+	"strings"
+
+	"github.com/spf13/cobra"
+
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/_examples/customsearch"
+)
+
+func init() {
+	rootCmd.AddCommand(searchCmd)
+}
+
+var searchCmd = &cobra.Command{
+	Use:   "search [query]",
+	Short: "Search xkcd.com",
+	Args:  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Fprintf(os.Stdout, "\x1b[2m%s\x1b[0m\n", strings.Repeat("━", tWidth))
+		fmt.Fprintf(os.Stdout, "\x1b[2m?q=\x1b[0m\x1b[1m%s\x1b[0m\n", strings.Join(args, " "))
+		fmt.Fprintf(os.Stdout, "\x1b[2m%s\x1b[0m\n", strings.Repeat("━", tWidth))
+
+		es, err := elasticsearch.NewDefaultClient()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\x1b[1;107;41mERROR: %s\x1b[0m\n", err)
+		}
+
+		config := customsearch.StoreConfig{Client: es, IndexName: IndexName}
+		store, err := customsearch.NewStore(config)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\x1b[1;107;41mERROR: %s\x1b[0m\n", err)
+			os.Exit(1)
+		}
+		search := Search{store: store, reHighlight: regexp.MustCompile("<em>(.+?)</em>")}
+
+		results, err := search.getResults(strings.Join(args, " "))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\x1b[1;107;41mERROR: %s\x1b[0m\n", err)
+			os.Exit(1)
+		}
+
+		if results.Total < 1 {
+			fmt.Fprintln(os.Stdout, "⨯ No results")
+			fmt.Fprintf(os.Stdout, "\x1b[2m%s\x1b[0m\n", strings.Repeat("─", tWidth))
+			os.Exit(0)
+		}
+
+		for _, result := range results.Hits {
+			search.displayResult(os.Stdout, result)
+		}
+	},
+}
+
+// Search allows to get and display results matching query.
+type Search struct {
+	store       *customsearch.Store
+	reHighlight *regexp.Regexp
+}
+
+func (s *Search) getResults(query string) (*customsearch.SearchResults, error) {
+	return s.store.Search(query)
+}
+
+func (s *Search) displayResult(w io.Writer, hit *customsearch.Hit) {
+	fmt.Fprintf(w, " [%s] ", hit)
+}
+
+func (s *Search) highlightString(input string) string {
+	return s.reHighlight.ReplaceAllString(input, "\x1b[30;47m$1\x1b[0m")
+}
