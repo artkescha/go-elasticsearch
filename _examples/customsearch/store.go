@@ -57,7 +57,7 @@ type Store struct {
 func NewStore(c StoreConfig) (*Store, error) {
 	indexName := c.IndexName
 	if indexName == "" {
-		indexName = "xseven"
+		indexName = "xkcd"
 	}
 
 	s := Store{es: c.Client, indexName: indexName}
@@ -85,9 +85,9 @@ func (s *Store) Create(item *Document) error {
 
 	ctx := context.Background()
 	res, err := esapi.CreateRequest{
-		Index: s.indexName,
-		//DocumentID: item.ID,
-		Body: bytes.NewReader(payload),
+		Index:      s.indexName,
+		DocumentID: item.ID,
+		Body:       bytes.NewReader(payload),
 	}.Do(ctx, s.es)
 	if err != nil {
 		return err
@@ -96,7 +96,6 @@ func (s *Store) Create(item *Document) error {
 
 	if res.IsError() {
 		//var e map[string]interface{}
-		fmt.Print(res.Body)
 		//if err := json.NewDecoder(res.Body).Decode(&e); err != nil {
 		//	return err
 		//}
@@ -133,6 +132,7 @@ func (s *Store) Search(query string, after ...string) (*SearchResults, error) {
 	if err != nil {
 		return &results, err
 	}
+
 	defer res.Body.Close()
 
 	if res.IsError() {
@@ -172,7 +172,7 @@ func (s *Store) Search(query string, after ...string) (*SearchResults, error) {
 
 	for _, hit := range r.Hits.Hits {
 		var h Hit
-		//h.ID = hit.ID
+		h.ID = hit.ID
 		//h.Sort = hit.Sort
 		//h.URL = strings.Join([]string{baseURL, h.ID, ""}, "/")
 		h.URL = baseURL
@@ -211,7 +211,6 @@ func (s *Store) buildQuery(query string, after ...string) io.Reader {
 
 	b.WriteString("\n}")
 
-	// fmt.Printf("%s\n", b.String())
 	return strings.NewReader(b.String())
 }
 
@@ -224,16 +223,9 @@ const searchMatch = `
 	"query" : {
 		"multi_match" : {
 			"query" : %q,
-			"fields" : ["title^100", "alt^10", "transcript"],
+			"fields" : ["content"],
 			"operator" : "and"
 		}
 	},
-	"highlight" : {
-		"fields" : {
-			"title" : { "number_of_fragments" : 0 },
-			"alt" : { "number_of_fragments" : 0 },
-			"transcript" : { "number_of_fragments" : 5, "fragment_size" : 25 }
-		}
-	},
-	"size" : 25,
+    "size" : 100,
 	"sort" : [ { "_score" : "desc" }, { "_doc" : "asc" } ]`

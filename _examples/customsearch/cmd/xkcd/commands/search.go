@@ -85,7 +85,7 @@ func (s *Search) getResults(query string) (*customsearch.SearchResults, error) {
 }
 
 func (s *Search) displayResult(w io.Writer, hit *customsearch.Hit) {
-	fmt.Fprintf(w, " [%s] ", hit)
+	fmt.Fprintf(w, " [%s] ", hit.Domain)
 }
 
 func (s *Search) highlightString(input string) string {

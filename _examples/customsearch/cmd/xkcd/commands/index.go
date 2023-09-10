@@ -19,7 +19,6 @@ package commands
 
 import (
 	"fmt"
-	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -202,7 +201,7 @@ func (c *Crawler) ProcessURL(url string) (doc customsearch.Document) {
 	if err != nil {
 		c.log.Error().Err(err).Msg("Error processing response")
 	} else {
-		c.log.Info().Msg(fmt.Sprintf("doc %s", doc))
+		//c.log.Info().Msg(fmt.Sprintf("doc %s", doc))
 		err = c.storeDocument(&doc)
 		if err != nil {
 			c.log.Error().Err(err).Msg("Error storing doc")
@@ -248,25 +247,39 @@ func (c *Crawler) processResponse(res *http.Response) (customsearch.Document, er
 
 	var doc customsearch.Document
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return doc, fmt.Errorf("read response body: %s", err)
-	}
+	//body, err := io.ReadAll(res.Body)
+	//if err != nil {
+	//	return doc, fmt.Errorf("read response body: %s", err)
+	//}
+
 	doc = customsearch.Document{
-		Content: string(body),
-		Domain:  res.Request.RemoteAddr,
+		ID:      strconv.Itoa(int(time.Now().UnixNano())),
+		Content: "тест", //string(body),
+		Domain:  res.Request.URL.String(),
 	}
 
-	c.log.Debug().Interface("doc", doc).Msg("Downloaded")
+	c.log.Info().Interface("SAA doc", doc).Msg("Downloaded")
+	//fmt.Printf("SAAA doc %+v", doc.Domain)
 	return doc, nil
 }
 
 func (c *Crawler) setupIndex() error {
 	mapping := `{
+    "settings" : {
+    "analysis": {
+      "analyzer": {
+        "custom_analyzer": {
+          "tokenizer": "standard",
+          "char_filter":  [ "html_strip" ]
+        }
+      }
+    }
+  },
     "mappings": {
       "_doc": {
         "properties": {
-          "content":    {"type": "text", "analyzer": "standard"},
+          "id":         {"type": "keyword"},
+          "content":    {"type": "text", "analyzer": "custom_analyzer"},
           "domain":     {"type": "keyword"},
         }
       }

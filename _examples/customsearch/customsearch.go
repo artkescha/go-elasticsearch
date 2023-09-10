@@ -25,6 +25,7 @@ const baseURL = "https://xseven.io"
 
 // Document wraps an xkcd.com comic.
 type Document struct {
+	ID      string `json:"id"`
 	Content string `json:"content"`
 	Domain  string `json:"domain"`
 }
