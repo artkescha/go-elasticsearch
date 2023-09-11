@@ -33,13 +33,13 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "xkcd",
+	Use:   "c54",
 	Short: "xkcd allows you to index and search xkcd.com",
 	// Long:  "TODO",
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&IndexName, "index", "i", "xkcd", "Index name")
+	rootCmd.PersistentFlags().StringVarP(&IndexName, "index", "i", "c54", "Index name")
 	tWidth, _, _ = terminal.GetSize(int(os.Stdout.Fd()))
 }
 

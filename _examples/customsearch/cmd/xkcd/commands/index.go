@@ -19,6 +19,7 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -33,6 +34,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 
 	"github.com/elastic/go-elasticsearch/v8/_examples/customsearch"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 var (
@@ -247,14 +249,15 @@ func (c *Crawler) processResponse(res *http.Response) (customsearch.Document, er
 
 	var doc customsearch.Document
 
-	//body, err := io.ReadAll(res.Body)
-	//if err != nil {
-	//	return doc, fmt.Errorf("read response body: %s", err)
-	//}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return doc, fmt.Errorf("read response body: %s", err)
+	}
+	p := bluemonday.StripTagsPolicy()
 
 	doc = customsearch.Document{
 		ID:      strconv.Itoa(int(time.Now().UnixNano())),
-		Content: "тест", //string(body),
+		Content: p.Sanitize(string(body)),
 		Domain:  res.Request.URL.String(),
 	}
 
@@ -287,3 +290,81 @@ func (c *Crawler) setupIndex() error {
 		}`
 	return c.store.CreateIndex(mapping)
 }
+
+//func (c *Crawler) setupIndex() error {
+//	mapping := `{
+//"settings": {
+//"index": {
+//"analysis": {
+//"char_filter": {
+//"ignore_html_tags": {
+//"type": "html_strip"
+//}
+//},
+//"analyzer": {
+//"ignore_html_tags": {
+//"char_filter": [
+//"ignore_html_tags"
+//],
+//"type": "custom"
+//}
+//}
+//}
+//}
+//},
+//   "mappings": {
+//     "_doc": {
+//       "properties": {
+//         "id":         {"type": "keyword"},
+//         "content":    {"type": "text", "analyzer": "ignore_html_tags"},
+//         "domain":     {"type": "keyword"},
+//       }
+//     }
+//   }
+//		}`
+//	return c.store.CreateIndex(mapping)
+//}
+
+//func (c *Crawler) setupIndex() error {
+//	mapping := `{
+//  "settings": {
+//    "index": {
+//      "analysis": {
+//        "char_filter": {
+//          "ignore_html_tags": {
+//            "type": "html_strip"
+//          }
+//        },
+//        "analyzer": {
+//          "ignore_html_tags": {
+//            "tokenizer": "lowercase",
+//            "char_filter": [
+//              "ignore_html_tags"
+//            ],
+//            "type": "custom"
+//          }
+//        }
+//      }
+//    }
+//  },
+//  "mappings": {
+//  "_doc": {
+//    "properties": {
+//      "id":         {"type": "keyword"},
+//      "domain":     {"type": "keyword"},
+//      "content": {
+//        "type": "text",
+//        "analyzer": "ignore_html_tags",
+//        "fields": {
+//          "keyword": {
+//            "type": "keyword",
+//            "ignore_above": 256
+//          }
+//        }
+//       }
+//      }
+//    }
+//  }
+//}`
+//	return c.store.CreateIndex(mapping)
+//}

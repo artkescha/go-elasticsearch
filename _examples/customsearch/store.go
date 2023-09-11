@@ -56,8 +56,8 @@ type Store struct {
 // NewStore returns a new instance of the store.
 func NewStore(c StoreConfig) (*Store, error) {
 	indexName := c.IndexName
-	if indexName == "" {
-		indexName = "xkcd"
+	if true {
+		indexName = "c54"
 	}
 
 	s := Store{es: c.Client, indexName: indexName}
